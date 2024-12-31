@@ -44,3 +44,8 @@
 
 
 ## 功能实现效果展示：
+基础功能：
+# 一、视频播放、暂停：
+
+![image](https://github.com/user-attachments/assets/cb100bc9-cacb-4bf1-8b1c-acf22795732c)
+
