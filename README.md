@@ -44,8 +44,64 @@
 
 
 ## 功能实现效果展示：
-基础功能：
+# 基础功能：
 # 一、视频播放、暂停：
 
 ![image](https://github.com/user-attachments/assets/cb100bc9-cacb-4bf1-8b1c-acf22795732c)
 
+# 二、视频进度、音量调整：
+
+![image](https://github.com/user-attachments/assets/c5fa8291-6e6a-4fe5-8947-a4873967cd69)
+
+# 三、支持添加并播放多种视频格式：
+
+![image](https://github.com/user-attachments/assets/f2d7f12e-d79f-4864-9681-d6c49bcfd8c4)
+
+# 拓展功能：
+# 一、视频倍速播放控制：
+
+![image](https://github.com/user-attachments/assets/873f02f6-0ff0-492c-acb4-a37d6271c485)
+
+# 二、视频截图功能：
+
+![image](https://github.com/user-attachments/assets/4d2722d8-f180-459a-aafa-ffd29ffa975f)
+
+# 三、视频质量调整控制：
+
+![image](https://github.com/user-attachments/assets/1fda9bb8-a981-452a-aa7f-07304bed8293)
+
+# 四、字幕加载与显示控制：
+未打开时：
+
+![image](https://github.com/user-attachments/assets/f87df601-3273-451f-9ceb-c9938716ade0)
+
+打开时：
+
+![image](https://github.com/user-attachments/assets/023edfab-9289-498b-8a94-76ed071ed1ef)
+
+对于没有字幕的原视频：   先进行字幕文件的加载
+
+![image](https://github.com/user-attachments/assets/28cd4d21-3a79-4cb5-9bd7-1fdf9433ba67)
+
+# 五、录制功能：
+按下后：   左下角会有提示
+
+![image](https://github.com/user-attachments/assets/8999db06-21ba-4a80-b7f1-27032d0ac9d3)
+
+再次按下后即可保存下来：
+
+![image](https://github.com/user-attachments/assets/da2e21ce-c25d-47d2-9876-1f3977d4b03b)
+
+# 六、播放方式功能：
+针对于一个视频播放结束后接下来要做什么，目前实现了三种方式：循环播放、列表播放、随机播放。
+
+![image](https://github.com/user-attachments/assets/40fd643c-6b81-42fb-a74f-612184d82aea)
+
+# 七、网络视频爬取功能：
+目前主要只实现了对于Bilibili上的视频进行爬取，通过网络技术连接Bilibili的网络视频库爬取其中对应视频的最高清晰度视频到本地，同时也可以设置大会员Cookie来进行更高画质的爬取。
+
+![image](https://github.com/user-attachments/assets/107ad124-7218-45a8-a1b0-2e35479b3a24)
+
+下载后即可播放：
+
+![image](https://github.com/user-attachments/assets/969a23ca-7fd3-4446-a800-9688af66f92d)
