@@ -1,0 +1,114 @@
+﻿#ifdef  __cplusplus
+extern "C" {
+#endif
+
+/* Uncomment this to use sin-wav based overlap add which in theory can improve
+   sound quality slightly, at the expense of lots of floating point math. */
+/* #define SONIC_USE_SIN */
+
+/* This specifies the range of voice pitches we try to match.
+   Note that if we go lower than 65, we could overflow in findPitchInRange */
+#define SONIC_MIN_PITCH 65
+#define SONIC_MAX_PITCH 400
+
+/* These are used to down-sample some inputs to improve speed */
+#define SONIC_AMDF_FREQ 4000
+
+struct sonicStreamStruct;
+typedef struct sonicStreamStruct *sonicStream;
+
+/* For all of the following functions, numChannels is multiplied by numSamples
+   to determine the actual number of values read or returned. */
+
+/* Create a sonic stream.  Return NULL only if we are out of memory and cannot
+  allocate the stream. Set numChannels to 1 for mono, and 2 for stereo. */
+// 创建一个音频流，如果内存溢出不能创建流会返回NULL，numCHannels表示声道的个数，1为单声道，2为双声道
+sonicStream sonicCreateStream(int sampleRate, int numChannels);
+/* Destroy the sonic stream. */
+// 销毁一个音频流
+void sonicDestroyStream(sonicStream stream);
+/* Use this to write floating point data to be speed up or down into the stream.
+   Values must be between -1 and 1.  Return 0 if memory realloc failed, otherwise 1 */
+//
+int sonicWriteFloatToStream(sonicStream stream, float *samples, int numSamples);
+/* Use this to write 16-bit data to be speed up or down into the stream.
+   Return 0 if memory realloc failed, otherwise 1 */
+int sonicWriteShortToStream(sonicStream stream, short *samples, int numSamples);
+/* Use this to write 8-bit unsigned data to be speed up or down into the stream.
+   Return 0 if memory realloc failed, otherwise 1 */
+int sonicWriteUnsignedCharToStream(sonicStream stream, unsigned char *samples, int numSamples);
+/* Use this to read floating point data out of the stream.  Sometimes no data
+   will be available, and zero is returned, which is not an error condition. */
+int sonicReadFloatFromStream(sonicStream stream, float *samples, int maxSamples);
+/* Use this to read 16-bit data out of the stream.  Sometimes no data will
+   be available, and zero is returned, which is not an error condition. */
+int sonicReadShortFromStream(sonicStream stream, short *samples, int maxSamples);
+/* Use this to read 8-bit unsigned data out of the stream.  Sometimes no data will
+   be available, and zero is returned, which is not an error condition. */
+int sonicReadUnsignedCharFromStream(sonicStream stream, unsigned char *samples, int maxSamples);
+/* Force the sonic stream to generate output using whatever data it currently
+   has.  No extra delay will be added to the output, but flushing in the middle of
+   words could introduce distortion. */
+// 立即强制刷新流
+int sonicFlushStream(sonicStream stream);
+/* Return the number of samples in the output buffer */
+// 返回输出缓冲中的采样点数目
+int sonicSamplesAvailable(sonicStream stream);
+/* Get the speed of the stream. */
+// 得到音频流的速度
+float sonicGetSpeed(sonicStream stream);
+/* Set the speed of the stream. */
+// 设置音频流的速度
+void sonicSetSpeed(sonicStream stream, float speed);
+/* Get the pitch of the stream. */
+float sonicGetPitch(sonicStream stream);
+/* Set the pitch of the stream. */
+void sonicSetPitch(sonicStream stream, float pitch);
+/* Get the rate of the stream. */
+float sonicGetRate(sonicStream stream);
+/* Set the rate of the stream. */
+void sonicSetRate(sonicStream stream, float rate);
+/* Get the scaling factor of the stream. */
+float sonicGetVolume(sonicStream stream);
+/* Set the scaling factor of the stream. */
+void sonicSetVolume(sonicStream stream, float volume);
+/* Get the chord pitch setting. */
+int sonicGetChordPitch(sonicStream stream);
+/* Set chord pitch mode on or off.  Default is off.  See the documentation
+   page for a description of this feature. */
+void sonicSetChordPitch(sonicStream stream, int useChordPitch);
+/* Get the quality setting. */
+// 得到音频流的质量
+int sonicGetQuality(sonicStream stream);
+/* Set the "quality".  Default 0 is virtually as good as 1, but very much faster. */
+// 设置音频流的质量，默认的0的质量几乎和1的一样好，但是更快
+void sonicSetQuality(sonicStream stream, int quality);
+/* Get the sample rate of the stream. */
+// 得到音频流的采样率
+int sonicGetSampleRate(sonicStream stream);
+/* Set the sample rate of the stream.  This will drop any samples that have not been read. */
+// 设置音频流的采样率
+void sonicSetSampleRate(sonicStream stream, int sampleRate);
+/* Get the number of channels. */
+// 得到音频的声道数
+int sonicGetNumChannels(sonicStream stream);
+/* Set the number of channels.  This will drop any samples that have not been read. */
+// 设置音频流的声道数
+void sonicSetNumChannels(sonicStream stream, int numChannels);
+/* This is a non-stream oriented interface to just change the speed of a sound
+   sample.  It works in-place on the sample array, so there must be at least
+   speed*numSamples available space in the array. Returns the new number of samples. */
+// 这是一个非面向流的借口，只是改变声音采样的速率。它工作在采样数组内部，
+//所以在数组内至少要有speed*numSampes大小的空间。返回值是新的采样点的数目
+
+int sonicChangeFloatSpeed(float *samples, int numSamples, float speed, float pitch,
+    float rate, float volume, int useChordPitch, int sampleRate, int numChannels);
+/* This is a non-stream oriented interface to just change the speed of a sound
+   sample.  It works in-place on the sample array, so there must be at least
+   speed*numSamples available space in the array. Returns the new number of samples. */
+int sonicChangeShortSpeed(short *samples, int numSamples, float speed, float pitch,
+    float rate, float volume, int useChordPitch, int sampleRate, int numChannels);
+
+#ifdef  __cplusplus
+}
+#endif

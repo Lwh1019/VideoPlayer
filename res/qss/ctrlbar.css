@@ -1,0 +1,93 @@
+/* 全局初始设为透明背景、白色文字 */
+* {
+    background-color: transparent;
+    color: white;
+}
+
+/* 控制条背景部分 */
+QWidget#PlaySliderBgWidget {
+    border-bottom: 1px solid black;
+}
+
+/* 按钮悬停 & 按下时的视觉反馈 */
+QPushButton {
+    border: none;
+}
+
+QPushButton:hover {
+    color: Cyan;
+    background-color: rgba(0, 255, 255, 0.1);
+    border: 1px solid Cyan;
+}
+
+QPushButton:pressed {
+    color: CadetBlue;
+    background-color: rgba(0, 255, 255, 0.2);
+    border: 1px solid CadetBlue;
+}
+
+/********** 滑竿 (QSlider) **********/
+/* 滑竿本身 */
+QSlider::groove:horizontal {
+    border: 1px solid #4A708B;
+    background: #C0C0C0;
+    height: 3px;
+    border-radius: 2px;
+    padding-left: -1px;
+    padding-right: -1px;
+}
+
+/* 已滑过的部分 */
+QSlider::sub-page:horizontal {
+    background: qlineargradient(x1: 0, y1: 0.2, x2: 1, y2: 1,
+            stop: 0 #5DCCFF, stop: 1 #1874CD);
+    border: 1px solid #4A708B;
+    border-radius: 2px;
+}
+
+/* 未滑过部分 */
+QSlider::add-page:horizontal {
+    background: #4c4c4c;
+    border: 0px solid #777;
+    border-radius: 2px;
+}
+
+/* 滑块 (handle) */
+QSlider::handle:horizontal {
+    background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5,
+            fx:0.5, fy:0.5, stop:0.6 #45ADED,
+            stop:0.8 rgba(255, 255, 255, 255));
+    width: 8px;
+    border-radius: 4px;
+    margin-top: -3px;
+    margin-bottom: -2px;
+}
+
+QSlider::handle:horizontal:hover {
+    background: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5,
+            fx:0.5, fy:0.5, stop:0 #2A8BDA,
+            stop:0.8 rgba(255, 255, 255, 255));
+    width: 8px;
+    border-radius: 4px;
+    margin-top: -3px;
+    margin-bottom: -2px;
+}
+
+/********** 时间显示 **********/
+QTimeEdit#VideoTotalTimeTimeEdit {
+    color: #c4c6d2;
+}
+
+QLabel#TimeSplitLabel {
+    color: #c4c6d2;
+}
+
+/********** 提示 (Tooltip) **********/
+QToolTip {
+    border: none;
+    background-color: #2e2f37;
+    color: white;
+    border-radius: 4px;
+    padding: 5px 8px;
+    font-size: 12px;
+}

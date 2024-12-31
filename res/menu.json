@@ -1,0 +1,13 @@
+{
+  "打开文件": "OpenFile/F",
+  "退出": "OnCloseBtnClicked/ESC",
+  "截图": "OnSaveBmp/S",
+  "全屏/退出全屏": "OnFullScreenPlay/Enter",
+  "录屏": "OnSavePeriod/A",
+  "循环方式": {
+    "循环播放": "OnLoop",
+    "列表播放": "OnList",
+    "随机播放": "OnRandom"
+  },
+  "点 击 Bilibili 试 试":"Onchekc"
+}
