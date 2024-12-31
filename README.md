@@ -10,3 +10,7 @@
 
 # 一、主交互界面：
 未运行时：
+![image](https://github.com/user-attachments/assets/0d054bc4-d9e5-44a4-9393-1ac9dfc0d52b)
+
+运行时界面：
+![image](https://github.com/user-attachments/assets/ddf7b178-eb31-456a-849f-5c2e9b8b08a4)
