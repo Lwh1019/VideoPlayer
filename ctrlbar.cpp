@@ -18,12 +18,25 @@
 
 extern bool isRecording;
 
+const int PLAY_SLIDER_MAX = 3600000; // 例如，最大支持1小时的视频（以毫秒为单位）
+const int VOLUME_SLIDER_MAX = 1000;  // 体积滑块最大值，代表100%
+
 CtrlBar::CtrlBar(QWidget *parent) :
     QWidget(parent),
     ui(new Ui::CtrlBar)
 {
     ui->setupUi(this);
     LastVolumePercent = 1.0;
+
+    ui->PlaySlider->setMinimum(0);
+    ui->PlaySlider->setMaximum(PLAY_SLIDER_MAX);
+    ui->PlaySlider->setSingleStep(100);   // 每次步进100毫秒
+    ui->PlaySlider->setPageStep(1000);    // 每次页面步进1秒
+
+    ui->VolumeSlider->setMinimum(0);
+    ui->VolumeSlider->setMaximum(VOLUME_SLIDER_MAX);
+    ui->VolumeSlider->setSingleStep(50);   // 每次步进5%
+    ui->VolumeSlider->setPageStep(100);    // 每次页面步进10%
 
 
     QTimer* textCheckTimer = new QTimer(this);
@@ -139,50 +152,73 @@ bool CtrlBar::ConnectSignalSlots()
     return true;
 }
 
-void CtrlBar::OnVideoTotalSeconds(int nSeconds)
+void CtrlBar::OnVideoTotalSeconds(double nSeconds)
 {
     TotalPlaySeconds = nSeconds;
 
-    int thh, tmm, tss;
-    thh = nSeconds / 3600;
-    tmm = (nSeconds % 3600) / 60;
-    tss = (nSeconds % 60);
-    QTime TotalTime(thh, tmm, tss);
+    // 计算小时、分钟、秒和毫秒
+    int thh = static_cast<int>(nSeconds) / 3600;
+    int tmm = (static_cast<int>(nSeconds) % 3600) / 60;
+    int tss = static_cast<int>(nSeconds) % 60;
+    int ms = static_cast<int>((nSeconds - static_cast<int>(nSeconds)) * 1000);
 
+    // 创建包含毫秒的 QTime 对象
+    QTime TotalTime(thh, tmm, tss, ms);
     ui->VideoTotalTimeTimeEdit->setTime(TotalTime);
+
+    // 设置滑块的最大值为总毫秒数，确保不会超过预设的最大值
+    int totalMillis = static_cast<int>(nSeconds * 1000);
+    totalMillis = qMin(totalMillis, PLAY_SLIDER_MAX);
+    ui->PlaySlider->setMaximum(totalMillis);
 }
 
 
-void CtrlBar::OnVideoPlaySeconds(int nSeconds)
+
+void CtrlBar::OnVideoPlaySeconds(double currentSeconds)
 {
-    nSeconds = std::min(nSeconds, TotalPlaySeconds);
-    int thh, tmm, tss;
-    thh = nSeconds / 3600;
-    tmm = (nSeconds % 3600) / 60;
-    tss = (nSeconds % 60);
-    QTime TotalTime(thh, tmm, tss);
+    currentSeconds = std::min(currentSeconds, TotalPlaySeconds);
 
-    ui->VideoPlayTimeTimeEdit->setTime(TotalTime);
+    // 计算小时、分钟、秒和毫秒
+    int thh = static_cast<int>(currentSeconds) / 3600;
+    int tmm = (static_cast<int>(currentSeconds) % 3600) / 60;
+    int tss = static_cast<int>(currentSeconds) % 60;
+    int ms = static_cast<int>((currentSeconds - static_cast<int>(currentSeconds)) * 1000);
 
-    ui->PlaySlider->setValue(nSeconds * 1.0 / TotalPlaySeconds * MAX_SLIDER_VALUE);
+    // 创建包含毫秒的 QTime 对象
+    QTime CurrentTime(thh, tmm, tss, ms);
+    ui->VideoPlayTimeTimeEdit->setTime(CurrentTime);
+
+    // 将当前播放时间转换为毫秒，并限制在滑块的范围内
+    int currentMillis = static_cast<int>(currentSeconds * 1000);
+    currentMillis = qMin(currentMillis, ui->PlaySlider->maximum());
+
+    // 设置滑块值
+    ui->PlaySlider->setValue(currentMillis);
 }
 
 void CtrlBar::OnVideopVolume(double dPercent)
 {
-    ui->VolumeSlider->setValue(dPercent * MAX_SLIDER_VALUE);
+    dPercent = qBound(0.0, dPercent, 1.0);
+
+    int volumeValue = static_cast<int>(dPercent * VOLUME_SLIDER_MAX);
+    ui->VolumeSlider->setValue(volumeValue);
     LastVolumePercent = dPercent;
     qDebug() << "LastVolumePercent：" << dPercent << '\n';
+
     if (LastVolumePercent == 0)
     {
-        GlobalHelper::SetIcon(ui->VolumeBtn, 12, QChar(0xf2e2));
+        GlobalHelper::SetIcon(ui->VolumeBtn, 12, QChar(0xf2e2)); // 静音图标
+        ui->VolumeBtn->setToolTip("取消静音");
     }
-    else if(LastVolumePercent==1)
+    else if (LastVolumePercent == 1)
     {
-        GlobalHelper::SetIcon(ui->VolumeBtn, 12, QChar(0xf028));
+        GlobalHelper::SetIcon(ui->VolumeBtn, 12, QChar(0xf028)); // 最大音量图标
+        ui->VolumeBtn->setToolTip("静音");
     }
     else
     {
-        GlobalHelper::SetIcon(ui->VolumeBtn, 12, QChar(0xf6a8));
+        GlobalHelper::SetIcon(ui->VolumeBtn, 12, QChar(0xf6a8)); // 中等音量图标
+        ui->VolumeBtn->setToolTip("静音");
     }
 
     GlobalHelper::SavePlayVolume(dPercent);
@@ -206,10 +242,10 @@ void CtrlBar::OnPauseStat(bool bPaused)
 void CtrlBar::OnStopFinished()
 {
     ui->PlaySlider->setValue(0);
-    QTime StopTime(0, 0, 0);
+    QTime StopTime(0, 0, 0, 0);
     ui->VideoTotalTimeTimeEdit->setTime(StopTime);
     ui->VideoPlayTimeTimeEdit->setTime(StopTime);
-    GlobalHelper::SetIcon(ui->PlayOrPauseBtn, 15, QChar(0xf04b));
+    GlobalHelper::SetIcon(ui->PlayOrPauseBtn, 15, QChar(0xf04b)); // 播放图标
     ui->PlayOrPauseBtn->setToolTip("播放");
 }
 
@@ -234,15 +270,21 @@ void CtrlBar::OnChangeVideo(QString s)
 }
 void CtrlBar::OnPlaySliderValueChanged()
 {
-    double dPercent = ui->PlaySlider->value()*1.0 / ui->PlaySlider->maximum();
-    emit SigPlaySeek(dPercent);
-    qDebug() << dPercent;
+
+    int currentMillis = ui->PlaySlider->value();
+
+    double targetSeconds = static_cast<double>(currentMillis) / 1000.0;
+
+    emit SigPlaySeek(targetSeconds/TotalPlaySeconds);
+    qDebug() << "Seeking to:" << targetSeconds << "seconds";
 }
 
 void CtrlBar::OnVolumeSliderValueChanged()
 {
-    double dPercent = ui->VolumeSlider->value()*1.0 / ui->VolumeSlider->maximum();
-    
+    int volumeValue = ui->VolumeSlider->value();
+
+    double dPercent = static_cast<double>(volumeValue) / VOLUME_SLIDER_MAX;
+
     emit SigPlayVolume(dPercent);
 
     OnVideopVolume(dPercent);
