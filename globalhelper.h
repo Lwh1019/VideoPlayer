@@ -53,5 +53,8 @@ extern "C"{
 #include "libavcodec/avfft.h"
 #include "libswresample/swresample.h"
 #include "SDL.h"
+#include "SDL_image.h"
+#include "SDL_ttf.h"
 }
-#define MAX_SLIDER_VALUE 65536
+#include <opencv2/opencv.hpp>
+#define MAX_SLIDER_VALUE 65535

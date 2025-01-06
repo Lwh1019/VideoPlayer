@@ -25,32 +25,49 @@
 #include "globalhelper.h"
 #include <QRandomGenerator>
 
-
-QString Playlist::GenerateThumbnail(const QString& videoPath)
+QString Playlist::GenerateThumbnail(const QString& filePath)
 {
-    QString thumbnailPath = QDir::tempPath() + "/" + QFileInfo(videoPath).baseName() + "_thumbnail.jpg";
+    QFileInfo fileInfo(filePath);
+    QString extension = fileInfo.suffix().toLower();
 
-    if (QFile::exists(thumbnailPath))
+    // 定义音频和视频扩展名
+    const QStringList audioExtensions = { "mp3", "wav", "aac", "flac", "ogg", "m4a", "wma" };
+    const QStringList videoExtensions = { "mkv", "rmvb", "mp4", "avi", "flv", "wmv", "mov", "yuv", "3gp" };
+
+    // 如果是音频文件，返回默认封面图像
+    if (audioExtensions.contains(extension))
     {
+        QString defaultImagePath = "://res//c.jpeg"; // 确保这个路径正确
+        return defaultImagePath;
+    }
+
+    if (videoExtensions.contains(extension))
+    {
+        QString thumbnailPath = QDir::tempPath() + "/" + fileInfo.baseName() + "_thumbnail.jpg";
+
+        if (QFile::exists(thumbnailPath))
+        {
+            return thumbnailPath;
+        }
+
+        QString ffmpegCmd = QString("ffmpeg -i \"%1\" -vf \"select='eq(pict_type,I)'\" -frames:v 1 \"%2\"")
+            .arg(filePath)
+            .arg(thumbnailPath);
+
+        QProcess process;
+        process.start(ffmpegCmd);
+        process.waitForFinished();
+
+        // 检查是否生成成功
+        if (!QFile::exists(thumbnailPath))
+        {
+            qDebug() << "Failed to generate thumbnail for" << filePath;
+            return QString();
+        }
+
         return thumbnailPath;
     }
-
-    QString ffmpegCmd = QString("ffmpeg -i \"%1\" -vf \"select='eq(pict_type,I)'\" -frames:v 1 \"%2\"")
-        .arg(videoPath)
-        .arg(thumbnailPath);
-
-    QProcess process;
-    process.start(ffmpegCmd);
-    process.waitForFinished();
-
-    // 检查是否生成成功
-    if (!QFile::exists(thumbnailPath))
-    {
-        qDebug() << "Failed to generate thumbnail for" << videoPath;
-        return QString();
-    }
-
-    return thumbnailPath;
+    return QString();
 }
 
 Playlist::Playlist(QWidget *parent) :
@@ -113,8 +130,23 @@ bool Playlist::InitUi()
             QString thumbnailPath = GenerateThumbnail(fileInfo.filePath());
             if (!thumbnailPath.isEmpty())
             {
-                QPixmap pixmap(thumbnailPath);
-                pItem->setIcon(QIcon(pixmap.scaled(100, 100, Qt::KeepAspectRatio))); // 设置缩略图
+                QPixmap pixmap;
+                if (thumbnailPath.startsWith("://")) // 资源文件路径
+                {
+                    pixmap.load(thumbnailPath);
+                }
+                else
+                {
+                    pixmap.load(thumbnailPath);
+                }
+                if (!pixmap.isNull())
+                {
+                    pItem->setIcon(QIcon(pixmap.scaled(100, 100, Qt::KeepAspectRatio, Qt::SmoothTransformation))); // 设置缩略图
+                }
+                else
+                {
+                    qDebug() << "Failed to load pixmap from" << thumbnailPath;
+                }
             }
             ui->List->addItem(pItem);
         }
@@ -177,6 +209,9 @@ void Playlist::OnAddFile(QString strFileName)
         strFileName.endsWith(".wmv", Qt::CaseInsensitive) ||
         strFileName.endsWith(".mov", Qt::CaseInsensitive) ||
         strFileName.endsWith(".yuv", Qt::CaseInsensitive) ||
+        strFileName.endsWith(".mp3", Qt::CaseInsensitive) ||
+        strFileName.endsWith(".wav", Qt::CaseInsensitive) ||
+        strFileName.endsWith(".ogg", Qt::CaseInsensitive) ||
         strFileName.endsWith(".3gp", Qt::CaseInsensitive);
     if (!bSupportMovie)
     {
@@ -216,6 +251,9 @@ void Playlist::OnAddFileAndPlay(QString strFileName)
         strFileName.endsWith(".wmv", Qt::CaseInsensitive) ||
         strFileName.endsWith(".mov", Qt::CaseInsensitive) ||
         strFileName.endsWith(".yuv", Qt::CaseInsensitive) ||
+        strFileName.endsWith(".mp3", Qt::CaseInsensitive) ||
+        strFileName.endsWith(".wav", Qt::CaseInsensitive) ||
+        strFileName.endsWith(".ogg", Qt::CaseInsensitive) ||
         strFileName.endsWith(".3gp", Qt::CaseInsensitive);
     if (!bSupportMovie)
     {

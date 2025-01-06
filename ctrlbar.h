@@ -17,8 +17,8 @@ public:
     bool Init();
 
 public:
-    void OnVideoTotalSeconds(int nSeconds);
-    void OnVideoPlaySeconds(int nSeconds);
+    void OnVideoTotalSeconds(double nSeconds);
+    void OnVideoPlaySeconds(double nSeconds);
     void OnVideopVolume(double dPercent);
     void OnPauseStat(bool bPaused);
     void OnStopFinished();
@@ -57,6 +57,6 @@ signals:
 private:
     Ui::CtrlBar *ui;
 
-    int TotalPlaySeconds;
+    double TotalPlaySeconds;
     double LastVolumePercent;
 };

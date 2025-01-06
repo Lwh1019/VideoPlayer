@@ -24,6 +24,8 @@ public:
     ~Show();
 	bool Init();
 
+    bool eventFilter(QObject* obj, QEvent* event);
+
 protected:
     void dropEvent(QDropEvent *event);
 
@@ -32,7 +34,9 @@ protected:
     void keyReleaseEvent(QKeyEvent *event);
 
 
-    void mousePressEvent(QMouseEvent *event);
+    void mousePressEvent(QMouseEvent* event);
+
+    void contextMenuEvent(QContextMenuEvent* event) override;
 
 public:
     void OnPlay(QString strFile);

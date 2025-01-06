@@ -37,8 +37,7 @@ double start = 0;
 Show::Show(QWidget *parent) :
     QWidget(parent),
     ui(new Ui::Show),
-    ActionGroup(this),
-    Menu(this)
+    ActionGroup(this)
 {
     ui->setupUi(this);
 
@@ -46,9 +45,6 @@ Show::Show(QWidget *parent) :
     setAcceptDrops(true);
 
     this->setAttribute(Qt::WA_OpaquePaintEvent);
-
-    ui->label->setUpdatesEnabled(false);
-
     this->setMouseTracking(true);
     
 
@@ -56,14 +52,8 @@ Show::Show(QWidget *parent) :
     LastFrameWidth = 0;
     LastFrameHeight = 0;
 
-    ActionGroup.addAction("全屏");
-    ActionGroup.addAction("暂停");
-    ActionGroup.addAction("停止");
-
-    Menu.addActions(ActionGroup.actions());
-
     connect(VideoCtl::GetInstance(), &VideoCtl::ResolutionChanged,this,&Show::OnResolutionChanged);
-    
+   
 }
 
 Show::~Show()
@@ -77,14 +67,53 @@ bool Show::Init()
     {
         return false;
     }
+
+    ui->label->installEventFilter(this);
+    ui->label_2->installEventFilter(this);
 	return true;
 }
+bool Show::eventFilter(QObject* obj, QEvent* event)
+{
+    if (obj == ui->label)
+    {
+        if (event->type() == QEvent::MouseButtonPress)
+        {
+            QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
+            if (mouseEvent->button() == Qt::RightButton)
+            {
+                qDebug() << "Show::eventFilter: Right button clicked on label";
+                emit SigShowMenu();
+                return true;
+            }
+        }
+    }
+    else if (obj == ui->label_2)
+    {
+        if (event->type() == QEvent::MouseButtonPress)
+        {
+            QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
+            if (mouseEvent->button() == Qt::RightButton)
+            {
+                qDebug() << "Show::eventFilter: Right button clicked on label";
+                emit SigShowMenu();
+                return true;
+            }
+        }
+    }
 
+    return QWidget::eventFilter(obj, event);
+}
+void Show::contextMenuEvent(QContextMenuEvent* event)
+{
+    qDebug() << "Show::contextMenuEvent triggered";
+    emit SigShowMenu();
+}
 void Show::OnFrameDimensionsChanged(int nFrameWidth, int nFrameHeight)
 {
     qDebug() << "Show::OnFrameDimensionsChanged" << nFrameWidth << nFrameHeight;
     LastFrameWidth = nFrameWidth;
     LastFrameHeight = nFrameHeight;
+
     ChangeShow();
 }
 
@@ -95,6 +124,7 @@ void Show::ChangeShow()
     if (LastFrameWidth == 0 && LastFrameHeight == 0)
     {
         ui->label->setGeometry(0, 0, width(), height());
+        qDebug() << "0 0 " << width() << " " << height() << '\n';
         return;
     }
     float videoAspectRatio = static_cast<float>(LastFrameWidth) / static_cast<float>(LastFrameHeight);
@@ -118,7 +148,6 @@ void Show::ChangeShow()
         offsetX = (containerWidth - displayWidth) / 2;
         offsetY = 0;
     }
-
     ui->label->setGeometry(offsetX, offsetY, displayWidth, displayHeight);
 }
 
@@ -164,16 +193,19 @@ void Show::keyReleaseEvent(QKeyEvent *event)
         break;
     }
 }
-void Show::mousePressEvent(QMouseEvent *event)
+void Show::mousePressEvent(QMouseEvent* event)
 {
-    if (event->buttons() & Qt::RightButton)
+    if (event->button() == Qt::RightButton)
     {
+        qDebug() << "我点击了右键" << '\n';
         emit SigShowMenu();
+        event->accept();
     }
-
-    QWidget::mousePressEvent(event);
+    else
+    {
+        QWidget::mousePressEvent(event);
+    }
 }
-
 void Show::OnDisplayMsg(QString strMsg)
 {
 	qDebug() << "Show::OnDisplayMsg " << strMsg;
@@ -181,19 +213,20 @@ void Show::OnDisplayMsg(QString strMsg)
 
 void Show::OnPlay(QString strFile)
 {
+    qDebug() << "调用了OnPlay函数" << '\n';
     LastFrameWidth = 0;
     LastFrameHeight = 0;
+    ui->label->update();
     ChangeShow();
-    VideoCtl::GetInstance()->StartPlay(strFile, ui->label->winId(),start);
+
+   // VideoCtl::GetInstance()->ReInit();
+    VideoCtl::GetInstance()->StartPlay(strFile, ui->label, start);
     start = 0.0;
 }
-
 void Show::OnStopFinished()
 {
     update();
 }
-
-
 void Show::OnTimerShowCursorUpdate()
 {
 }

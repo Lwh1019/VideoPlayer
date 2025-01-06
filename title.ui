@@ -152,7 +152,7 @@
      </property>
      <property name="icon">
       <iconset>
-       <normaloff>C:/Users/lwh/Desktop/al2l.png</normaloff>C:/Users/lwh/Desktop/al2l.png</iconset>
+       <normaloff>res/al2l.png</normaloff>res/al2l.png</iconset>
      </property>
      <property name="iconSize">
       <size>

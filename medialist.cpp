@@ -40,12 +40,12 @@ bool MediaList::Init()
 
 void MediaList::contextMenuEvent(QContextMenuEvent* event)
 {
-    Menu.exec(event->globalPos());
+    Menu.popup(event->globalPos());
 }
 
 void MediaList::AddFile()
 {
-    QStringList listFileName = QFileDialog::getOpenFileNames(this, "打开文件", QDir::homePath(),"视频文件(*.mkv *.rmvb *.mp4 *.avi *.flv *.wmv *.3gp *.mov *.yuv)");
+    QStringList listFileName = QFileDialog::getOpenFileNames(this, "打开文件", QDir::homePath(),"音视频文件(*.wav *.ogg *.mp3 *.mkv *.rmvb *.mp4 *.avi *.flv *.wmv *.3gp *.mov *.yuv)");
     for (QString strFileName : listFileName)
     {
         emit SigAddFile(strFileName);

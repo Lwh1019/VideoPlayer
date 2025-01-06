@@ -45,6 +45,8 @@ MainWid::MainWid(QMainWindow *parent) :
 
     ShadowWidth = 10;
 
+
+
     QString qss = GlobalHelper::GetQssStr("://res/qss/mainwid.css");
     setStyleSheet(qss);
 
@@ -231,6 +233,9 @@ void MainWid::keyReleaseEvent(QKeyEvent *event)
     case Qt::Key_A:
         OnSavePeriod();
         break;
+    case Qt::Key_M:
+        OnShowMenu();
+        break;
 	default:
 		break;
 	}
@@ -270,7 +275,7 @@ void MainWid::mouseMoveEvent(QMouseEvent *event)
 
 void MainWid::contextMenuEvent(QContextMenuEvent* event)
 {
-    Menu.exec(event->globalPos());
+    Menu.popup(event->globalPos());
 }
 
 void MainWid::OnFullScreenPlay()
@@ -381,7 +386,23 @@ void MainWid::OnCtrlBarHideTimeOut()
 
 void MainWid::OnShowMenu()
 {
-    Menu.exec(cursor().pos());
+    qDebug() << "MainWid::OnShowMenu triggered at position:" << QCursor::pos();
+    QPoint globalPos = QCursor::pos();
+    QScreen* currentScreen = QGuiApplication::screenAt(globalPos);
+    if (currentScreen)
+    {
+        QRect screenGeometry = currentScreen->geometry();
+        QPoint adjustedPos = globalPos;
+        if (globalPos.x() + Menu.sizeHint().width() > screenGeometry.right())
+            adjustedPos.setX(screenGeometry.right() - Menu.sizeHint().width());
+        if (globalPos.y() + Menu.sizeHint().height() > screenGeometry.bottom())
+            adjustedPos.setY(screenGeometry.bottom() - Menu.sizeHint().height());
+        Menu.popup(adjustedPos);
+    }
+    else
+    {
+        Menu.popup(globalPos);
+    }
 }
 
 void MainWid::OnShowAbout()
@@ -391,7 +412,7 @@ void MainWid::OnShowAbout()
 
 void MainWid::OpenFile()
 {
-    QString strFileName = QFileDialog::getOpenFileName(this, "打开文件", QDir::homePath(),"视频文件(*.mkv *.rmvb *.mp4 *.avi *.flv *.wmv *.3gp *.mov *.yuv)");
+    QString strFileName = QFileDialog::getOpenFileName(this, "打开文件", QDir::homePath(),"音视频文件(*.wav *.ogg *.mp3 *.mkv *.rmvb *.mp4 *.avi *.flv *.wmv *.3gp *.mov *.yuv)");
     emit SigOpenFile(strFileName);
 }
 void MainWid::OnSaveBmp()

@@ -10,5 +10,7 @@
         <file>res/fa-v4compatibility.ttf</file>
         <file>res/杨任东竹石体-Medium.ttf</file>
         <file>res/杨任东竹石体-Bold.ttf</file>
+        <file>res/image.png</file>
+        <file>res/c.jpeg</file>
     </qresource>
 </RCC>

@@ -268,6 +268,15 @@ typedef struct VideoState {
         double end_time;
     } current_subtitle;
 
+
+    bool no_video;
+    SDL_Texture* default_tex;
+
+    struct SwsContext* img_convert_ctx_scaled; // 缩放上下文
+    struct CudaScaleContext* cuda_scale_ctx;   // CUDA 缩放上下文
+    int vid_texture_width; // 视频纹理宽度
+    int vid_texture_height; // 视频纹理高度
+
 } VideoState;
 
 

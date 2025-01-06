@@ -64,6 +64,8 @@
         </widget>
        </item>
       </layout>
+      <zorder>ShowWid</zorder>
+      <zorder>CtrlBarWid</zorder>
      </widget>
     </item>
    </layout>

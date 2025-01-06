@@ -7,6 +7,7 @@
 #include <QThread>
 #include <QString>
 #include <QTimer>
+#include <QLabel>
 #include <QStandardPaths>
 
 #include "globalhelper.h"
@@ -29,7 +30,8 @@ class VideoCtl : public QObject
 public:
     static VideoCtl* GetInstance();
     ~VideoCtl();
-    bool StartPlay(QString strFileName, WId widPlayWid, double start);
+    bool ReInit();
+    bool StartPlay(QString strFileName, QLabel* label, double start);
 
     void update_sample_display(VideoState* is, short* samples, int samples_size);
 
@@ -50,8 +52,8 @@ signals:
     void SigPlayMsg(QString strMsg);
     void SigFrameDimensionsChanged(int nFrameWidth, int nFrameHeight); //<视频宽高发生变化
 
-    void SigVideoTotalSeconds(int nSeconds);
-    void SigVideoPlaySeconds(int nSeconds);
+    void SigVideoTotalSeconds(double nSeconds);
+    void SigVideoPlaySeconds(double nSeconds);
 
     void SigVideoVolume(double dPercent);
     void SigPauseStat(bool bPaused);
@@ -242,4 +244,7 @@ public:
     // 变速相关
     sonicStreamStruct* audio_speed_convert;
 
+private:
+    int m_targetWidth;
+    int m_targetHeight;
 };

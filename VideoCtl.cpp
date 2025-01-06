@@ -84,15 +84,18 @@ void VideoCtl::CalculateDisplayRect(SDL_Rect* rect,
         aspect_ratio = 1.0;
     aspect_ratio *= (float)pic_width / (float)pic_height;
 
-    height = scr_height;
+    int targetWidth = m_targetWidth > 0 ? m_targetWidth : scr_width;
+    int targetHeight = m_targetHeight > 0 ? m_targetHeight : scr_height;
+
+    height = targetHeight;
     width = lrint(height * aspect_ratio) & ~1;
-    if (width > scr_width)
+    if (width > targetWidth)
     {
-        width = scr_width;
+        width = targetWidth;
         height = lrint(width / aspect_ratio) & ~1;
     }
-    x = (scr_width - width) / 2;
-    y = (scr_height - height) / 2;
+    x = (targetWidth - width) / 2;
+    y = (targetHeight - height) / 2;
     rect->x = scr_xleft + x;
     rect->y = scr_ytop + y;
     rect->w = FFMAX(width, 1);
@@ -103,48 +106,98 @@ void VideoCtl::CalculateDisplayRect(SDL_Rect* rect,
 int VideoCtl::UploadTexture(SDL_Texture* tex, AVFrame* frame, struct SwsContext** img_convert_ctx)
 {
     int ret = 0;
-    switch (frame->format)
+    AVFrame* processed_frame = nullptr;
+
+    bool need_processing = (m_targetWidth != 0 && m_targetHeight != 0);
+
+    if (need_processing)
     {
-    case AV_PIX_FMT_YUV420P:
-        if (frame->linesize[0] < 0 || frame->linesize[1] < 0 || frame->linesize[2] < 0) {
-            av_log(NULL, AV_LOG_ERROR, "Negative linesize is not supported for YUV.\n");
+        *img_convert_ctx = sws_getCachedContext(*img_convert_ctx,
+            frame->width, frame->height, (AVPixelFormat)frame->format,
+            m_targetWidth > 0 ? m_targetWidth : frame->width,
+            m_targetHeight > 0 ? m_targetHeight : frame->height,
+            AV_PIX_FMT_BGRA, SWS_BICUBIC, NULL, NULL, NULL);
+
+        if (!*img_convert_ctx) {
+            av_log(NULL, AV_LOG_FATAL, "Cannot initialize the conversion context\n");
             return -1;
         }
-        ret = SDL_UpdateYUVTexture(tex, NULL, frame->data[0], frame->linesize[0],
-            frame->data[1], frame->linesize[1],
-            frame->data[2], frame->linesize[2]);
-        break;
-    case AV_PIX_FMT_BGRA:
-        if (frame->linesize[0] < 0)
-        {
-            ret = SDL_UpdateTexture(tex, NULL, frame->data[0] + frame->linesize[0] * (frame->height - 1), -frame->linesize[0]);
+
+        processed_frame = av_frame_alloc();
+        if (!processed_frame) {
+            av_log(NULL, AV_LOG_ERROR, "Could not allocate processed_frame\n");
+            return -1;
         }
-        else {
-            ret = SDL_UpdateTexture(tex, NULL, frame->data[0], frame->linesize[0]);
+        processed_frame->format = AV_PIX_FMT_BGRA;
+        processed_frame->width = m_targetWidth > 0 ? m_targetWidth : frame->width;
+        processed_frame->height = m_targetHeight > 0 ? m_targetHeight : frame->height;
+
+        ret = av_frame_get_buffer(processed_frame, 32);
+        if (ret < 0) {
+            av_log(NULL, AV_LOG_ERROR, "Could not allocate the video frame data\n");
+            av_frame_free(&processed_frame);
+            return -1;
         }
-        break;
-    default:
-        *img_convert_ctx = sws_getCachedContext(*img_convert_ctx,
-            frame->width, frame->height, (AVPixelFormat)frame->format, frame->width, frame->height,
-            AV_PIX_FMT_BGRA, SWS_BICUBIC, NULL, NULL, NULL);
-        if (*img_convert_ctx != NULL)
-        {
-            uint8_t* pixels[4];
-            int pitch[4];
-            if (!SDL_LockTexture(tex, NULL, (void**)pixels, pitch))
-            {
-                sws_scale(*img_convert_ctx, (const uint8_t* const*)frame->data, frame->linesize,
-                    0, frame->height, pixels, pitch);
-                SDL_UnlockTexture(tex);
-            }
+
+        // 执行缩放
+        ret = sws_scale(*img_convert_ctx, (const uint8_t* const*)frame->data, frame->linesize,
+            0, frame->height, processed_frame->data, processed_frame->linesize);
+        if (ret < 0) {
+            av_log(NULL, AV_LOG_ERROR, "sws_scale failed\n");
+            av_frame_free(&processed_frame);
+            return -1;
         }
-        else
-        {
-            av_log(NULL, AV_LOG_FATAL, "Cannot initialize the conversion context\n");
-            ret = -1;
-        }
-        break;
+        // 将处理后的帧上传到 SDL 纹理
+        ret = SDL_UpdateTexture(tex, NULL, processed_frame->data[0], processed_frame->linesize[0]);
+
+        av_frame_free(&processed_frame);
     }
+    else {
+        // 不需要处理，直接上传纹理
+        switch (frame->format)
+        {
+        case AV_PIX_FMT_YUV420P:
+            if (frame->linesize[0] < 0 || frame->linesize[1] < 0 || frame->linesize[2] < 0) {
+                av_log(NULL, AV_LOG_ERROR, "Negative linesize is not supported for YUV.\n");
+                return -1;
+            }
+            ret = SDL_UpdateYUVTexture(tex, NULL, frame->data[0], frame->linesize[0],
+                frame->data[1], frame->linesize[1],
+                frame->data[2], frame->linesize[2]);
+            break;
+        case AV_PIX_FMT_BGRA:
+            if (frame->linesize[0] < 0)
+            {
+                ret = SDL_UpdateTexture(tex, NULL, frame->data[0] + frame->linesize[0] * (frame->height - 1), -frame->linesize[0]);
+            }
+            else {
+                ret = SDL_UpdateTexture(tex, NULL, frame->data[0], frame->linesize[0]);
+            }
+            break;
+        default:
+            *img_convert_ctx = sws_getCachedContext(*img_convert_ctx,
+                frame->width, frame->height, (AVPixelFormat)frame->format, frame->width, frame->height,
+                AV_PIX_FMT_BGRA, SWS_BICUBIC, NULL, NULL, NULL);
+            if (*img_convert_ctx != NULL)
+            {
+                uint8_t* pixels[4];
+                int pitch[4];
+                if (!SDL_LockTexture(tex, NULL, (void**)pixels, pitch))
+                {
+                    sws_scale(*img_convert_ctx, (const uint8_t* const*)frame->data, frame->linesize,
+                        0, frame->height, pixels, pitch);
+                    SDL_UnlockTexture(tex);
+                }
+            }
+            else
+            {
+                av_log(NULL, AV_LOG_FATAL, "Cannot initialize the conversion context\n");
+                ret = -1;
+            }
+            break;
+        }
+    }
+
     return ret;
 }
 
@@ -152,6 +205,7 @@ int VideoCtl::UploadTexture(SDL_Texture* tex, AVFrame* frame, struct SwsContext*
 // 将视频帧和字幕帧渲染到窗口中
 void VideoCtl::VideoImageDisplay(VideoState* is)
 {
+    //qDebug() << "调用了VideoImageDisplay" << '\n';
     Frame* vp;
     Frame* sp = NULL;
     SDL_Rect rect;
@@ -166,7 +220,7 @@ void VideoCtl::VideoImageDisplay(VideoState* is)
     //qDebug() << is->xleft << "  " << is->ytop << " " << is->width << " " << is->height << "  " << vp->width << "  " << vp->height << '\n';
 
     // 视频纹理处理
-    if (!vp->uploaded)
+    if (!vp->uploaded &&is->no_video==false)
     {
         int sdl_pix_fmt = vp->frame->format == AV_PIX_FMT_YUV420P ? SDL_PIXELFORMAT_YV12 : SDL_PIXELFORMAT_ARGB8888;
         if (ReallocTexture(&is->vid_texture, sdl_pix_fmt, vp->frame->width, vp->frame->height, SDL_BLENDMODE_NONE, 0) < 0)
@@ -188,8 +242,45 @@ void VideoCtl::VideoImageDisplay(VideoState* is)
     }
 
     // 渲染视频
-    SDL_RenderCopyEx(renderer, is->vid_texture, NULL, &rect, 0, NULL, (SDL_RendererFlip)(vp->flip_v ? SDL_FLIP_VERTICAL : 0));
+    if (is->no_video)
+    {
+        //qDebug() << "将渲染本地图像" << '\n';
+        if (is->default_tex)
+        {
+            int tex_width, tex_height;
+            if (SDL_QueryTexture(is->default_tex, NULL, NULL, &tex_width, &tex_height) != 0)
+            {
+                qDebug() << "查询纹理失败：" << SDL_GetError();
+                return;
+            }
 
+            SDL_Rect dstRect;
+            dstRect.w = tex_width;
+            dstRect.h = tex_height;
+            dstRect.x = (is->width - tex_width) / 2;
+            dstRect.y = (is->height - tex_height) / 2;
+
+            if (dstRect.x < 0) { dstRect.x = 0; }
+            if (dstRect.y < 0) { dstRect.y = 0; }
+            if (dstRect.w > is->width) { dstRect.w = is->width; }
+            if (dstRect.h > is->height) { dstRect.h = is->height; }
+
+
+            if (SDL_RenderCopyEx(renderer, is->default_tex, NULL, &dstRect, 0, NULL, SDL_FLIP_NONE) != 0)
+            {
+                qDebug() << "渲染纹理失败：" << SDL_GetError();
+            }
+        }
+        else
+        {
+            qDebug() << "default_tex 未创建，无法渲染图片。";
+        }
+    }
+    else
+    {
+        //qDebug() << "将渲染图像" << '\n';
+        SDL_RenderCopyEx(renderer, is->vid_texture, NULL, &rect, 0, NULL, (SDL_RendererFlip)(vp->flip_v ? SDL_FLIP_VERTICAL : 0));
+    }
     // 获取当前时间
     current_time = GetMasterClock(is);
 
@@ -339,6 +430,11 @@ void VideoCtl::StreamClose(VideoState* is)
         SDL_DestroyTexture(is->vid_texture);
     if (is->sub_texture)
         SDL_DestroyTexture(is->sub_texture);
+
+    if (is->default_tex) {
+        SDL_DestroyTexture(is->default_tex);
+        is->default_tex = nullptr;
+    }
     av_free(is);
 }
 
@@ -903,6 +999,13 @@ void VideoCtl::VideoRefresh(void* opaque, double* remaining_time)
         if (is->force_refresh && is->pictq.rindex_shown)
             VideoDisplay(is);
     }
+
+    if (is->no_video)
+    {
+        is->force_refresh = 1;
+        VideoDisplay(is);
+    }
+
     is->force_refresh = 0;
 
     // 发出播放时间信号
@@ -1850,8 +1953,24 @@ void VideoCtl::ReadThread(VideoState* is)
 
     //获得视频、音频、字幕的流索引
     st_index[AVMEDIA_TYPE_VIDEO] = av_find_best_stream(ic, AVMEDIA_TYPE_VIDEO, st_index[AVMEDIA_TYPE_VIDEO], -1, NULL, 0);
-
+    if (st_index[AVMEDIA_TYPE_VIDEO] >= 0)
+    {
+        qDebug() << "找到视频流，索引:" << st_index[AVMEDIA_TYPE_VIDEO];
+    }
+    else
+    {
+        qDebug() << "未找到视频流";
+    }
     st_index[AVMEDIA_TYPE_AUDIO] = av_find_best_stream(ic, AVMEDIA_TYPE_AUDIO, st_index[AVMEDIA_TYPE_AUDIO], st_index[AVMEDIA_TYPE_VIDEO], NULL, 0);
+
+    if (st_index[AVMEDIA_TYPE_AUDIO] >= 0)
+    {
+        qDebug() << "找到音频流，索引:" << st_index[AVMEDIA_TYPE_AUDIO];
+    }
+    else
+    {
+        qDebug() << "未找到音频流";
+    }
 
     st_index[AVMEDIA_TYPE_SUBTITLE] = av_find_best_stream(ic, AVMEDIA_TYPE_SUBTITLE, st_index[AVMEDIA_TYPE_SUBTITLE], (st_index[AVMEDIA_TYPE_AUDIO] >= 0 ? st_index[AVMEDIA_TYPE_AUDIO] : st_index[AVMEDIA_TYPE_VIDEO]), NULL, 0);
 
@@ -1885,6 +2004,12 @@ void VideoCtl::ReadThread(VideoState* is)
     {
         ret = StreamOpen(is, st_index[AVMEDIA_TYPE_VIDEO]);
     }
+    else
+    {
+        is->no_video = true;
+        is->force_refresh = 1;
+        qDebug() << "未找到视频流, 将使用本地图片作为假视频...";
+    }
 
     //打开字幕流
     if (st_index[AVMEDIA_TYPE_SUBTITLE] >= 0)
@@ -1896,6 +2021,7 @@ void VideoCtl::ReadThread(VideoState* is)
     if (is->video_stream < 0 && is->audio_stream < 0)
     {
         ret = -1;
+        qDebug() << "ERROR THERE" << '\n';
         goto fail;
     }
 
@@ -2127,6 +2253,10 @@ VideoState* VideoCtl::StreamOpen(const char* filename)
     InitClock(&is->audclk, &is->audioq.serial);
     InitClock(&is->extclk, &is->extclk.serial);
     is->audio_clock_serial = -1;
+
+    is->no_video = false;
+    is->default_tex = nullptr;
+
     //音量
     if (startup_volume < 0)
         av_log(NULL, AV_LOG_WARNING, "-volume=%d < 0, setting to 0\n", startup_volume);
@@ -2424,6 +2554,7 @@ void VideoCtl::UpdateVolume(int sign, double step)
 // 将解码后的帧渲染到屏幕上
 void VideoCtl::VideoDisplay(VideoState* is)
 {
+    //qDebug() << "调用了VideoDisplay" << '\n';
     if (!window) VideoOpen(is);
     if (renderer)
     {
@@ -2456,7 +2587,6 @@ void VideoCtl::VideoDisplay(VideoState* is)
             show_rect.unlock();
         }
     }
-
 }
 
 // 初始化 SDL 窗口和渲染器
@@ -2474,6 +2604,7 @@ int VideoCtl::VideoOpen(VideoState* is)
         flags |= SDL_WINDOW_RESIZABLE;
 
         window = SDL_CreateWindowFrom((void*)play_wid);
+        
         SDL_GetWindowSize(window, &w, &h);//初始宽高设置为显示控件宽高
         SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
         if (window)
@@ -2497,6 +2628,28 @@ int VideoCtl::VideoOpen(VideoState* is)
                 else qDebug() << "渲染器设置成功" << '\n';
             }
         }
+        if (is->no_video)
+        {
+            QString imagePath = QDir::currentPath() + "/res/image.png"; // 确认路径正确
+            SDL_Surface* pSurface = IMG_Load(imagePath.toStdString().c_str());
+            if (!pSurface)
+            {
+                qDebug() << "加载假视频图片失败:" << imagePath << ", 错误：" << IMG_GetError();
+            }
+            else
+            {
+                is->default_tex = SDL_CreateTextureFromSurface(renderer, pSurface);
+                SDL_FreeSurface(pSurface);
+                if (!is->default_tex)
+                {
+                    qDebug() << "创建假视频纹理失败:" << SDL_GetError();
+                }
+                else
+                {
+                    qDebug() << "假视频图片加载成功，已创建纹理。";
+                }
+            }
+        }
     }
     else
     {
@@ -2511,6 +2664,8 @@ int VideoCtl::VideoOpen(VideoState* is)
 
     is->width = w;
     is->height = h;
+
+
 
     return 0;
 }
@@ -2608,7 +2763,9 @@ VideoCtl::VideoCtl(QObject* parent) :
     isRecording(false),
     recordStartTime(0),
     recordEndTime(0),
-    isloop(1)
+    isloop(1),
+    m_targetWidth(0),
+    m_targetHeight(0)
 {
     avdevice_register_all();
     //网络格式初始化
@@ -2636,6 +2793,9 @@ VideoCtl::VideoCtl(QObject* parent) :
         qDebug() << "Failed to create sonic stream during initialization.";
     }
 
+    if (IMG_Init(IMG_INIT_JPG | IMG_INIT_PNG) == 0) {
+        qDebug() << "SDL2_image 初始化失败：" << IMG_GetError();
+    }
 
     connect(captureProcess, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
         this, &VideoCtl::OnCaptureFinished);
@@ -2721,10 +2881,22 @@ VideoCtl::~VideoCtl()
     SDL_Quit();
 
 }
-
-bool VideoCtl::StartPlay(QString strFileName, WId widPlayWid, double start)
+bool VideoCtl::ReInit()
 {
-
+    if (m_CurStream)
+    {
+        DoExit(m_CurStream); 
+        m_CurStream = nullptr;
+    }
+    SDL_Quit();
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER) != 0) {
+        qDebug() << "Failed to re-init SDL:" << SDL_GetError();
+        return false;
+    }
+    return true;
+}
+bool VideoCtl::StartPlay(QString strFileName,QLabel* label, double start)
+{
     m_bPlayLoop = false;
     if (m_tPlayLoopThread.joinable())
     {
@@ -2734,13 +2906,14 @@ bool VideoCtl::StartPlay(QString strFileName, WId widPlayWid, double start)
     {
         emit SigStartPlay(strFileName);//正式播放，发送给标题栏
         Filename = strFileName;
-        widlay = widPlayWid;
+
+        widlay = label->winId();
         emit SigClear();
 
     }
     else emit SigStartPlay(Filename);
-
-    play_wid = widPlayWid;
+    
+    play_wid = label->winId();
 
     VideoState* is;
 
@@ -2823,7 +2996,7 @@ void VideoCtl::ChangeResolution(const std::string& resolution)
 
     outFile = outputFilePath;
 
-    int crfValue = 20;
+    int crfValue = 23;
     QString ffmpegCmd = QString(
         "ffmpeg  -hwaccel cuda -hwaccel_output_format cuda -i \"%1\" -c:v h264_nvenc -crf %2 -b:v %3k -preset slow -vf \"scale_cuda=%4:%5\" -r %6 \"%7\"")
         .arg(Filename)
