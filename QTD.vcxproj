@@ -60,16 +60,16 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
-    <IncludePath>F:\opencv\opencv-4.9.0\opencv-4.9.0\build\install\include;F:\Digital Video Solve\Final-Work\lib\SDL2\include;F:\opencv\soundtouch\include;D:\lists\ffmpeg-n4.4.3-3-gb48951bd29-win64-lgpl-shared-4.4\include;F:\QT\6.8.0\msvc2022_64\include;$(IncludePath)</IncludePath>
-    <LibraryPath>F:\opencv\opencv-4.9.0\opencv-4.9.0\build\install\x64\vc17\lib;F:\opencv\soundtouch\lib;F:\QT\6.8.0\msvc2022_64\lib;F:\Digital Video Solve\Final-Work\lib\SDL2\lib\x64;D:\lists\ffmpeg-n4.4.3-3-gb48951bd29-win64-lgpl-shared-4.4\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>F:\Digital Video Solve\Final-Work\lib\SDL2\include;F:\opencv\soundtouch\include;D:\lists\ffmpeg-n4.4.3-3-gb48951bd29-win64-lgpl-shared-4.4\include;F:\QT\6.8.0\msvc2022_64\include;$(IncludePath)</IncludePath>
+    <LibraryPath>F:\opencv\soundtouch\lib;F:\QT\6.8.0\msvc2022_64\lib;F:\Digital Video Solve\Final-Work\lib\SDL2\lib\x64;D:\lists\ffmpeg-n4.4.3-3-gb48951bd29-win64-lgpl-shared-4.4\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
-    <IncludePath>F:\opencv\opencv-4.9.0\opencv-4.9.0\build\install\include;F:\Digital Video Solve\Final-Work\lib\SDL2\include;F:\opencv\soundtouch\include;D:\lists\ffmpeg-n4.4.3-3-gb48951bd29-win64-lgpl-shared-4.4\include;F:\QT\6.8.0\msvc2022_64\include;$(IncludePath)</IncludePath>
-    <LibraryPath>F:\opencv\opencv-4.9.0\opencv-4.9.0\build\install\x64\vc17\lib;F:\opencv\soundtouch\lib;F:\QT\6.8.0\msvc2022_64\lib;F:\Digital Video Solve\Final-Work\lib\SDL2\lib\x64;D:\lists\ffmpeg-n4.4.3-3-gb48951bd29-win64-lgpl-shared-4.4\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>F:\Digital Video Solve\Final-Work\lib\SDL2\include;F:\opencv\soundtouch\include;D:\lists\ffmpeg-n4.4.3-3-gb48951bd29-win64-lgpl-shared-4.4\include;F:\QT\6.8.0\msvc2022_64\include;$(IncludePath)</IncludePath>
+    <LibraryPath>F:\opencv\soundtouch\lib;F:\QT\6.8.0\msvc2022_64\lib;F:\Digital Video Solve\Final-Work\lib\SDL2\lib\x64;D:\lists\ffmpeg-n4.4.3-3-gb48951bd29-win64-lgpl-shared-4.4\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Link>
-      <AdditionalDependencies>Qt6Multimediad.lib;Qt6MultimediaWidgetsd.lib;Qt6Networkd.lib;Qt6Svgd.lib;Qt6SvgWidgetsd.lib;Qt6Cored.lib;SoundTouchD_x64.lib;avcodec.lib;avdevice.lib;avfilter.lib;avformat.lib;avutil.lib;swresample.lib;swscale.lib;SDL2.lib;SDL2_ttf.lib;SDL2_image.lib;opencv_world490d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Qt6Multimediad.lib;Qt6MultimediaWidgetsd.lib;Qt6Networkd.lib;Qt6Svgd.lib;Qt6SvgWidgetsd.lib;Qt6Cored.lib;SoundTouchD_x64.lib;avcodec.lib;avdevice.lib;avfilter.lib;avformat.lib;avutil.lib;swresample.lib;swscale.lib;SDL2.lib;SDL2_ttf.lib;SDL2_image.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ClCompile>
       <DisableSpecificWarnings>4996</DisableSpecificWarnings>
@@ -78,7 +78,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Link>
-      <AdditionalDependencies>Qt6Multimediad.lib;Qt6MultimediaWidgetsd.lib;Qt6Networkd.lib;Qt6Svgd.lib;Qt6SvgWidgetsd.lib;Qt6Cored.lib;SoundTouchD_x64.lib;avcodec.lib;avdevice.lib;avfilter.lib;avformat.lib;avutil.lib;swresample.lib;swscale.lib;SDL2.lib;SDL2_ttf.lib;SDL2_image.lib;opencv_world490d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Qt6Multimediad.lib;Qt6MultimediaWidgetsd.lib;Qt6Networkd.lib;Qt6Svgd.lib;Qt6SvgWidgetsd.lib;Qt6Cored.lib;SoundTouchD_x64.lib;avcodec.lib;avdevice.lib;avfilter.lib;avformat.lib;avutil.lib;swresample.lib;swscale.lib;SDL2.lib;SDL2_ttf.lib;SDL2_image.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ClCompile>
       <DisableSpecificWarnings>4996</DisableSpecificWarnings>

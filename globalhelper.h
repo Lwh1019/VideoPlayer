@@ -56,5 +56,3 @@ extern "C"{
 #include "SDL_image.h"
 #include "SDL_ttf.h"
 }
-#include <opencv2/opencv.hpp>
-#define MAX_SLIDER_VALUE 65535
